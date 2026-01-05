@@ -7,20 +7,21 @@ import 'package:scrapdealer/api_services/get_shop_api.dart';
 import 'package:scrapdealer/screens/add_scrap_type_screen/add_scrap_type_screen.dart';
 import 'package:scrapdealer/screens/add_scrap_type_screen/update_shop_screen.dart';
 import 'package:scrapdealer/screens/dashboard.dart';
+import 'package:scrapdealer/screens/dealer_completed_pickups_screen.dart';
 import 'package:scrapdealer/screens/dealer_orders_screen.dart';
 import '../../controller/controller.dart';
 import '../../model/ShopListModel.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_style.dart';
 
-class Transection extends StatefulWidget {
-  const Transection({super.key});
+class PickupHistoryScreen extends StatefulWidget {
+  const PickupHistoryScreen({super.key});
 
   @override
-  State<Transection> createState() => _TransectionState();
+  State<PickupHistoryScreen> createState() => _PickupHistoryScreenState();
 }
 
-class _TransectionState extends State<Transection> {
+class _PickupHistoryScreenState extends State<PickupHistoryScreen> {
   late Future<List<ShopData>> shopList;
   @override
   void initState() {
@@ -81,9 +82,12 @@ class _TransectionState extends State<Transection> {
                   final shop = snapshot.data![index];
                   return InkWell(
                     onTap: () {
-                      Get.to(() => DealerOrdersScreen(shopId: int.parse(shop.id!)));
+                      Get.to(
+                        () => DealerCompletedPickupsScreen(
+                          shopId: int.parse(shop.id!),
+                        ),
+                      );
                     },
-
 
                     child: Container(
                       decoration: BoxDecoration(

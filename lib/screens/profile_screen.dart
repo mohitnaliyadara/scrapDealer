@@ -1,281 +1,138 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:scrapdealer/res/app_route.dart';
 import 'package:scrapdealer/screens/dashboard.dart';
 import 'package:scrapdealer/screens/sign_in_screens/login_screen.dart';
-import 'package:scrapdealer/utils/app_colors.dart';
-import 'package:scrapdealer/utils/app_style.dart';
 import 'package:scrapdealer/widgets/custom_button.dart';
-import 'package:scrapdealer/widgets/custom_snakbar.dart';
 
-class DealerProfileScreen extends StatefulWidget {
-  const DealerProfileScreen({super.key});
+import '../api_services/dealer_profile_api.dart';
+import '../utils/app_colors.dart';
+import '../utils/app_style.dart';
+
+class ProfileScreen extends StatefulWidget {
+  final String dealerEmail;
+  const ProfileScreen({super.key, required this.dealerEmail});
 
   @override
-  State<DealerProfileScreen> createState() => _DealerProfileScreenState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _DealerProfileScreenState extends State<DealerProfileScreen> {
-  bool isLoading = true;
-  Map<String, dynamic>? dealerData;
-  int shopCount = 0;
+class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<Map<String, dynamic>?> profile;
 
   @override
   void initState() {
     super.initState();
-    loadDealerProfile();
-  }
-
-  /// 🔹 Fetch dealer data + shop count
-  Future<void> loadDealerProfile() async {
-    try {
-      final dealerEmail = GetStorage().read("dealerEmail");
-      if (dealerEmail == null) {
-        AppSnackbar.show("No dealer logged in", SnackbarType.error);
-        return;
-      }
-
-      // Fetch dealer details
-      final dealerDoc = await FirebaseFirestore.instance
-          .collection("dealer")
-          .doc(dealerEmail)
-          .get();
-
-      // Fetch total shops count
-      final shopSnapshot = await FirebaseFirestore.instance
-          .collection("dealer")
-          .doc(dealerEmail)
-          .collection("shops")
-          .get();
-
-      setState(() {
-        dealerData = dealerDoc.data();
-        shopCount = shopSnapshot.docs.length;
-        isLoading = false;
-      });
-    } catch (e) {
-      AppSnackbar.show("Error loading profile: $e", SnackbarType.error);
-      setState(() => isLoading = false);
-    }
-  }
-
-  /// 🔹 Edit profile info
-  void showEditDialog() {
-    final nameController = TextEditingController(
-      text: dealerData?["name"] ?? "",
-    );
-    final phoneController = TextEditingController(
-      text: dealerData?["phone"] ?? "",
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Text(
-          "Edit Profile",
-          style: AppTextStyle.bold18(color: AppColors.primaryColor),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: "Full Name",
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: "Phone Number",
-                prefixIcon: Icon(Icons.phone),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () async {
-              final dealerEmail = GetStorage().read("dealerEmail");
-              try {
-                await FirebaseFirestore.instance
-                    .collection("dealer")
-                    .doc(dealerEmail)
-                    .update({
-                      "name": nameController.text.trim(),
-                      "phone": phoneController.text.trim(),
-                    });
-                Navigator.pop(context);
-                AppSnackbar.show(
-                  "Profile updated successfully",
-                  SnackbarType.success,
-                );
-                loadDealerProfile();
-              } catch (e) {
-                AppSnackbar.show(
-                  "Error updating profile: $e",
-                  SnackbarType.error,
-                );
-              }
-            },
-            child: const Text("Save", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    profile = DealerProfileApi.getProfile(widget.dealerEmail);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.primaryColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(onPressed: (){
-          AppRoute.navigateOffAll(pageName: DealerDashboardScreen());
-        }, icon: Icon(Icons.arrow_back_ios_new,color: AppColors.whiteColor,)),
+        backgroundColor: AppColors.primaryColor,
+        
         title: Text(
           "Dealer Profile",
-          style: AppTextStyle.bold18(color: Colors.white),
+          style: AppTextStyle.bold18(color: AppColors.whiteColor),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: AppColors.whiteColor),
+          onPressed: () => Get.offAll(()=>DealerDashboardScreen()),
         ),
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primaryColor,
-              AppColors.primaryColor.withOpacity(0.85),
-              AppColors.primaryColor.withOpacity(0.6),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                )
-              : Center(
-                  child: Container(
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    padding: const EdgeInsets.all(25),
-                    decoration: BoxDecoration(
-                      color: AppColors.whiteColor,
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 45,
-                          backgroundColor: AppColors.primaryColor.withOpacity(
-                            0.2,
-                          ),
-                          child: Icon(
-                            Icons.person,
-                            size: 50,
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Text(
-                          dealerData?["name"] ?? "Unknown Dealer",
-                          style: AppTextStyle.bold20(
-                            color: AppColors.primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          dealerData?["email"] ?? "No Email",
-                          style: AppTextStyle.regular14(
-                            color: AppColors.darkGreyColor,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          "Phone: ${dealerData?["phone"] ?? "N/A"}",
-                          style: AppTextStyle.regular14(
-                            color: AppColors.darkGreyColor,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Container(
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: AppColors.greyColor,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Total Shops",
-                                style: AppTextStyle.bold16(
-                                  color: AppColors.blackColor,
-                                ),
-                              ),
-                              Text(
-                                "$shopCount",
-                                style: AppTextStyle.bold18(
-                                  color: AppColors.primaryColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 25),
-                        customButton(
-                          text:
-                            "Edit Profile",
+      body: FutureBuilder<Map<String, dynamic>?>(
+        future: profile,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            );
+          }
 
-                          onPress: showEditDialog,
-                        ),
-                        const SizedBox(height: 15),
-                        customButton(
-                          text:
-                            "Logout",
+          if (!snapshot.hasData) {
+            return const Center(
+              child: Text(
+                "Profile not found",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
 
-                          onPress: () {
-                            GetStorage().erase();
-                            AppRoute.navigateOffAll(pageName: LoginScreen());
-                            AppSnackbar.show(
-                              "Logged out successfully",
-                              SnackbarType.success,
-                            );
-                          },
-                        ),
-                      ],
+          final dealer = snapshot.data!;
+
+          return Center(
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.whiteColor,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 6),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  /// Avatar
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: AppColors.primaryColor.withOpacity(0.15),
+                    child: Icon(
+                      Icons.store,
+                      size: 40,
+                      color: AppColors.primaryColor,
                     ),
                   ),
-                ),
-        ),
+
+                  const SizedBox(height: 12),
+
+                  /// Name
+                  Text(dealer["dealer_name"], style: AppTextStyle.bold18()),
+
+                  const SizedBox(height: 4),
+
+                  /// Email
+                  Text(
+                    dealer["dealer_email"],
+                    style: AppTextStyle.regular14(color: Colors.grey),
+                  ),
+
+                  const Divider(height: 30),
+
+                  /// Phone
+                  Row(
+                    children: [
+                      const Icon(Icons.phone, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        dealer["phone_number"],
+                        style: AppTextStyle.medium16(),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// Logout
+                  customButton(
+                    text: "Logout",
+                    onPress: () {
+                      GetStorage().erase();
+                      Get.offAll(() => LoginScreen());
+                    },
+                    backcolor: AppColors.primaryColor,
+                    textstyle: AppTextStyle.bold16(color: AppColors.whiteColor),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

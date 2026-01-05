@@ -17,11 +17,18 @@ class GetScrapTypeApi {
       final response = await http.post(url, body: {"shopId": shopId});
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        final data = json["subCategoryData"] as List;
-        final subCategory = data
-            .map((e) => SubCategoryData.fromJson(e))
-            .toList();
-        return subCategory;
+        if (json["status"] == "success") {
+          final data = json["subCategoryData"] as List;
+          final subCategory = data
+              .map((e) => SubCategoryData.fromJson(e))
+              .toList();
+          return subCategory;
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Error: ${json["message"]}")));
+          return [];
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: ${response.statusCode}")),

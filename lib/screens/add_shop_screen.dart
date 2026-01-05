@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -47,7 +46,7 @@ class _AddShopScreenState extends State<AddShopScreen> {
 
   @override
   Widget build(BuildContext context) {
-log(GetStorage().read("emailDealer"));
+    log(GetStorage().read("emailDealer"));
     return Scaffold(
       backgroundColor: AppColors.primaryColor,
       appBar: AppBar(
@@ -166,15 +165,16 @@ log(GetStorage().read("emailDealer"));
                       textInputType: TextInputType.emailAddress,
                       validation: (value) {
                         final emailRegex = RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
                         );
+
                         if (value!.isEmpty) {
                           return "Email is required";
                         }
                         if (!emailRegex.hasMatch(value)) {
                           return "Enter a valid email address";
                         }
-                        if(Controller.loginEmail != value ){
+                        if (Controller.loginEmail != value) {
                           return "Check Register email !, not match";
                         }
                         return null;
@@ -193,7 +193,6 @@ log(GetStorage().read("emailDealer"));
                         }
 
                         final addressRegex = RegExp(r'^[a-zA-Z0-9\s,./]+$');
-
 
                         if (!addressRegex.hasMatch(value)) {
                           return "Only letters, numbers, space, comma, dot and slash allowed";

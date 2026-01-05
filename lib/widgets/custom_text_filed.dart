@@ -18,10 +18,12 @@ Widget customTextFiled({
   FormFieldValidator<String>? validation,
   int? maxLines,
   int ? errorMaxLine,
+  bool? enable,
 }) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 15),
     child: TextFormField(
+      enabled: enable ?? true,
 
       validator: validation,
       autovalidateMode: AutovalidateMode.onUserInteraction,
